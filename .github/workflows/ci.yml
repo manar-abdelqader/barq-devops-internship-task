@@ -14,17 +14,20 @@ jobs:
         run: docker compose build
       - name: Start environment
         run: docker compose up -d
-      - name: Wait for services to become healthy
+      - name: Wait for NGINX to respond
         run: |
           for i in $(seq 1 30); do
-            if docker compose ps | grep -q "unhealthy"; then
-              echo "Waiting for services to become healthy... ($i)"
-              sleep 2
-            else
-              echo "All services report healthy or starting cleanly."
+            if curl -sf http://127.0.0.1:8080/health > /dev/null; then
+              echo "NGINX is responding."
               break
             fi
+            echo "Waiting for NGINX... ($i)"
+            sleep 3
           done
+      - name: Show container status for debugging
+        run: docker compose ps -a
+      - name: Show nginx logs for debugging
+        run: docker compose logs nginx --tail=50
       - name: Run validation script
         run: |
           chmod +x validate.py || true
