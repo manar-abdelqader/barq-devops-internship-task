@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """
 validate.py - checks the BARQ environment is up and healthy.
+Uses bounded retries per endpoint to tolerate slow-starting environments (e.g. CI runners).
 Exits 0 on success (PASS), non-zero on any failure (FAIL).
 """
 import sys
+import time
 import urllib.request
 import socket
 
 BASE_URL = "http://127.0.0.1:8080"
 ENDPOINTS = ["/", "/health", "/ready", "/instance", "/records", "/counter"]
 PROHIBITED_PORTS = [5432, 6379]
+MAX_RETRIES = 10
+RETRY_DELAY = 2
 
 failed = False
 
@@ -20,24 +24,33 @@ def check(name, ok, detail=""):
     if not ok:
         failed = True
 
-print("=== Checking public endpoints ===")
+def get_with_retry(url):
+    last_error = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            with urllib.request.urlopen(url, timeout=3) as resp:
+                return resp.status, None
+        except Exception as e:
+            last_error = e
+            time.sleep(RETRY_DELAY)
+    return None, last_error
+
+print("=== Checking public endpoints (bounded retries) ===")
 for path in ENDPOINTS:
     url = BASE_URL + path
-    try:
-        with urllib.request.urlopen(url, timeout=3) as resp:
-            check(f"GET {path}", resp.status == 200, f"(status={resp.status})")
-    except Exception as e:
-        check(f"GET {path}", False, f"(error={e})")
+    status, err = get_with_retry(url)
+    check(f"GET {path}", status == 200, f"(status={status}, error={err})")
 
 print("\n=== Checking backend identity varies (both instances reachable) ===")
 instances = set()
 for _ in range(10):
-    try:
-        with urllib.request.urlopen(BASE_URL + "/instance", timeout=3) as resp:
-            body = resp.read().decode()
-            instances.add(body)
-    except Exception:
-        pass
+    status, _ = get_with_retry(BASE_URL + "/instance")
+    if status == 200:
+        try:
+            with urllib.request.urlopen(BASE_URL + "/instance", timeout=3) as resp:
+                instances.add(resp.read().decode())
+        except Exception:
+            pass
 check("Both app-01 and app-02 respond via /instance", len(instances) >= 1, f"(seen {len(instances)} distinct responses)")
 
 print("\n=== Checking prohibited ports are NOT publicly reachable ===")
