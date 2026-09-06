@@ -6,6 +6,7 @@ Exits 0 on success (PASS), non-zero on any failure (FAIL).
 """
 import sys
 import time
+import json
 import urllib.request
 import socket
 
@@ -29,7 +30,7 @@ def get_with_retry(url):
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             with urllib.request.urlopen(url, timeout=3) as resp:
-                return resp.status, None
+                return resp.status, resp.read().decode()
         except Exception as e:
             last_error = e
             if attempt < MAX_RETRIES:
@@ -45,11 +46,13 @@ for path in ENDPOINTS:
 print("\n=== Checking backend identity varies (both instances reachable) ===")
 instances = set()
 for _ in range(10):
-    status, _ = get_with_retry(BASE_URL + "/instance")
+    status, body = get_with_retry(BASE_URL + "/instance")
     if status == 200:
         try:
-            with urllib.request.urlopen(BASE_URL + "/instance", timeout=3) as resp:
-                instances.add(resp.read().decode())
+            data = json.loads(body)
+            instance_id = data.get("instance_id")
+            if instance_id:
+                instances.add(instance_id)
         except Exception:
             pass
 check("Both app-01 and app-02 respond via /instance", len(instances) >= 2, f"(seen {len(instances)} distinct responses)")
