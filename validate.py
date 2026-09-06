@@ -12,7 +12,7 @@ import socket
 BASE_URL = "http://127.0.0.1:8080"
 ENDPOINTS = ["/", "/health", "/ready", "/instance", "/records", "/counter"]
 PROHIBITED_PORTS = [5432, 6379]
-MAX_RETRIES = 10
+MAX_RETRIES = 15
 RETRY_DELAY = 2
 
 failed = False
@@ -32,7 +32,8 @@ def get_with_retry(url):
                 return resp.status, None
         except Exception as e:
             last_error = e
-            time.sleep(RETRY_DELAY)
+            if attempt < MAX_RETRIES:
+                time.sleep(RETRY_DELAY)
     return None, last_error
 
 print("=== Checking public endpoints (bounded retries) ===")
@@ -51,7 +52,7 @@ for _ in range(10):
                 instances.add(resp.read().decode())
         except Exception:
             pass
-check("Both app-01 and app-02 respond via /instance", len(instances) >= 1, f"(seen {len(instances)} distinct responses)")
+check("Both app-01 and app-02 respond via /instance", len(instances) >= 2, f"(seen {len(instances)} distinct responses)")
 
 print("\n=== Checking prohibited ports are NOT publicly reachable ===")
 for port in PROHIBITED_PORTS:
