@@ -24,6 +24,10 @@ jobs:
             echo "Waiting for NGINX... ($i)"
             sleep 3
           done
+      - name: Show container status for debugging
+        run: docker compose ps -a
+      - name: Show nginx logs for debugging
+        run: docker compose logs nginx --tail=50
       - name: Run validation script
         run: |
           chmod +x validate.py || true
