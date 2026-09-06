@@ -48,6 +48,7 @@ class Dependencies:
 
 def create_app(config=None, dependencies=None):
     app = Flask(__name__)
+    app.extensions = {}
     app.config.update(INSTANCE_ID=os.getenv("INSTANCE_ID", "local"),
                       APP_MESSAGE=os.getenv("APP_MESSAGE", "Welcome to BARQ Systems"),
                       MAX_CONTENT_LENGTH=16 * 1024)
@@ -143,4 +144,3 @@ if __name__ == "__main__":
               redis_url=os.getenv("REDIS_URL", ""))
     create_app().run(host=os.getenv("APP_HOST", "0.0.0.0"),
                      port=int(os.getenv("APP_PORT", "8080")), threaded=True, debug=False)
-
