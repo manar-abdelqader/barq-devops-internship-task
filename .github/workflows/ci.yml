@@ -14,15 +14,18 @@ jobs:
         run: docker compose build
       - name: Start environment
         run: docker compose up -d
-      - name: Wait for NGINX to respond
+      - name: Wait for services to be healthy
         run: |
-          for i in $(seq 1 30); do
-            if curl -sf http://127.0.0.1:8080/health > /dev/null; then
-              echo "NGINX is responding."
+          echo "Waiting for all services to be healthy..."
+          for i in $(seq 1 60); do
+            if docker compose exec -T app-01 python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)" 2>/dev/null && \
+               docker compose exec -T app-02 python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)" 2>/dev/null && \
+               curl -sf http://127.0.0.1:8080/health > /dev/null 2>&1; then
+              echo "All services are healthy!"
               break
             fi
-            echo "Waiting for NGINX... ($i)"
-            sleep 3
+            echo "Waiting for services... ($i/60)"
+            sleep 2
           done
       - name: Show container status for debugging
         run: docker compose ps -a
