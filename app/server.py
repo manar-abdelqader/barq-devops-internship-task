@@ -99,7 +99,7 @@ def create_app(config=None, dependencies=None):
 
     @app.get("/instance")
     def identity():
-        return response({"status": "ok"})
+        return response({"instance_id": instance})
 
     @app.get("/ready")
     def ready():
@@ -143,3 +143,4 @@ if __name__ == "__main__":
               redis_url=os.getenv("REDIS_URL", ""))
     create_app().run(host=os.getenv("APP_HOST", "0.0.0.0"),
                      port=int(os.getenv("APP_PORT", "8080")), threaded=True, debug=False)
+
