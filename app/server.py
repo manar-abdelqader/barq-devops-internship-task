@@ -100,7 +100,7 @@ def create_app(config=None, dependencies=None):
 
     @app.get("/instance")
     def identity():
-        return response({"instance_id": instance})
+        return response({"status": "ok"})
 
     @app.get("/ready")
     def ready():
