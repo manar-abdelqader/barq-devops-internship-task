@@ -1,97 +1,57 @@
 <img src="assets/barq-logo.svg" alt="BARQ Systems" width="180">
 
-# DevOps Internship Task - Starter v2
+# BARQ DevOps Internship Task
 
-**Due date:** ____________________
+Two Flask instances run behind NGINX with PostgreSQL and Redis on isolated Docker networks. NGINX is the only public service.
 
-**Time window:** 4 calendar days from the invitation email date/time.
+## Prerequisites
 
-Read [the task](assessment/TASK.md), then [the API contract](assessment/APPLICATION.md).
-Everyone receives this same release. The environment is intentionally broken.
-Hidden issue types and count are not disclosed. Investigate this project; do not replace it.
-
-## Included
-
-- Flask API, PostgreSQL, Redis, Docker and NGINX starter files.
-- Three historical logs, a question template and documentation templates.
-- App-only tests and a recorded challenge script.
-- Unimplemented validation, failure-test and backup/restore placeholders.
-
-Use synthetic lab accounts/data only. Supplied values are for this disposable exercise,
-never for real services. Keep the lab on your local machine; do not expose it publicly.
-
-## Before you start
-
-- Linux or WSL2, Python 3.12, Git and Docker with Compose.
-- Docker Desktop must use Linux containers. Run shell scripts in Linux/WSL.
-- Suggested capacity: 2 CPU cores, 4 GB free RAM and 3 GB free disk, plus Docker overhead.
-- Internet for first downloads and GitHub. No cloud account or paid registry required.
-- Use a machine where container names app-01, app-02, nginx, postgres and redis are unused.
-  Do not delete someone else's containers to free those names.
-- Intended public port: 8080 before the video, 8090 after the live change.
-  If either is occupied, ask the organizer for a documented workstation exception.
-
-## Start
-
-Clone the supplied Git bundle/repository. Keep both release commits and the v2 baseline tag.
-Set your own Git name/email before making changes.
-
-From the repository root:
+Docker Desktop using Linux containers, Docker Compose v2, Python 3.12, Bash/WSL and Git. Copy the safe environment template before starting:
 
 ```bash
-git status
-git log -2 --oneline
 cp .env.example .env
-docker version
-docker compose version
-docker compose -p barq-assessment up --build -d
-docker compose -p barq-assessment ps -a
-docker compose -p barq-assessment logs --no-color
+# Replace CHANGE_ME in .env with the supplied assessment-lab password.
+docker compose up --build -d
+docker compose ps
 ```
 
-The initial environment is not expected to pass. Record what actually happens.
-The intended URL is http://127.0.0.1:8080; do not assume the starter configuration is correct.
-
-App-only checks use fake dependencies, not real SQL/Redis or Docker networking:
+The initial public URL is `http://127.0.0.1:8080`. `postgres`, `redis`, `app-01` and `app-02` do not publish host ports. Check the endpoints:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python -m unittest discover -s tests -v
+curl -i http://127.0.0.1:8080/health
+curl -i http://127.0.0.1:8080/ready
+curl -H 'Content-Type: application/json' -d '{"title":"Persistence proof"}' http://127.0.0.1:8080/records
+curl http://127.0.0.1:8080/records
+curl http://127.0.0.1:8080/counter
+for i in $(seq 1 10); do curl -s http://127.0.0.1:8080/instance; echo; done
 ```
 
-## Your work
+## Verify, failure test, persistence and backup
 
-- Complete [assessment/TASK.md](assessment/TASK.md).
-- Implement validate.py, failure_test.py, backup.sh and restore.sh, or documented equivalents.
-  Placeholders deliberately exit 2; they are unfinished deliverables, not validation evidence.
-- Create .github/workflows/ci.yml yourself.
-- Complete the root report templates and docs/EVIDENCE_INDEX.md.
-- Add architecture.png or architecture.pdf.
-- Replace this README with copyable setup/build/run/test/failure/backup/restore/cleanup commands.
-- Commit as you work. Do not commit real secrets, backups, virtual environments or challenge state.
-
-## Recorded challenge
-
-Use the supplied video_challenge.sh unchanged. Read its code if needed; do not run it early.
-After repairing the environment, run it once, for the first time in the video working copy,
-during the continuous 12-18 minute recording. The script requires healthy services, both
-initial instances and the target network layout. Preflight failures make no runtime changes.
+`validate.py` has bounded retries and exits non-zero on a failed endpoint, missing backend identity, or exposed PostgreSQL/Redis port.
 
 ```bash
-./video_challenge.sh
+python3 validate.py
+python3 failure_test.py
+./backup.sh
+./restore.sh backups/barq_tasks_YYYYMMDDTHHMMSSZ.dump
 ```
 
-If you deliberately changed the project name, pass --project YOUR_PROJECT.
-An organizer-approved alternate local URL can be passed with --url http://127.0.0.1:PORT.
-The script touches only matching Compose-owned lab containers/networks.
-Keep the receipt in .assessment/challenge.json for the evidence index. Do not delete the
-one-run marker to retry. A local marker is not tamper-proof; ownership is judged from evidence.
-Do not use docker compose down to reset the runtime challenge.
+For the persistence proof, create a record, recreate only the app and PostgreSQL containers without deleting volumes, then list records:
 
-## Stop safely
+```bash
+curl -H 'Content-Type: application/json' -d '{"title":"Survives recreation"}' http://127.0.0.1:8080/records
+docker compose rm -sf app-01 app-02 postgres
+docker compose up -d
+curl http://127.0.0.1:8080/records
+```
 
-Outside the recorded challenge, docker compose -p barq-assessment down stops this lab.
-Do not use --volumes during persistence tests. Avoid global Docker prune/cleanup commands.
-Back up anything you need before removing containers; investigate whether data actually persists.
+Never use `docker compose down --volumes` during this proof. To stop the lab outside the recorded challenge, use `docker compose down`; remove volumes only when intentionally discarding data.
+
+## CI and design
+
+GitHub Actions runs Compose syntax validation, image build, startup/readiness checks and `validate.py` on every push and pull request. A green run proves this automated two-instance scenario on a fresh runner; it does not prove the video, backup restore or production reliability. See `architecture.pdf`, `log_analysis.md`, `troubleshooting.md`, `decisions.md`, `security_review.md`, and `docs/EVIDENCE_INDEX.md`.
+
+## Video-final configuration
+
+During the continuous video only, change `PUBLIC_PORT` from `8080` to `8090`, add `app-03` on both application networks and update the NGINX upstream, then rerun validation adapted for three identities. Record each command, output and commit. Do not run `video_challenge.sh` before the recorded first run.
