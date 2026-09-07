@@ -10,3 +10,4 @@
 8. **Backup risk:** named volumes are not backups. Run `backup.sh`, test `restore.sh`, encrypt and store backups off-host in production.
 9. **Observability:** JSON application/edge logs exist, but no metrics/alerts are implemented. Add health, latency, error-rate and capacity alerts.
 10. **Input and proxy controls:** record titles have validation and body size is capped. Production should add TLS, rate limiting, security headers and an authentication/authorization design.
+11. **Secret-bearing logs:** startup logs previously included connection URLs. They now report only whether database and Redis configuration exists; verify with `docker compose logs app-01`.

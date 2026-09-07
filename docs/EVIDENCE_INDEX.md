@@ -15,6 +15,7 @@
 | Public endpoints and CI | `validate.py`, `.github/workflows/ci.yml`, green GitHub Actions run | `a9d1b1e` | pending |
 | Failure tolerance and recovery | `failure_test.py` output | _commit after live verification_ | pending |
 | Backup, restore and persistence | `backup.sh`, `restore.sh`, terminal output | _commit after live verification_ | pending |
+| Local automated verification | `evidence/verification-2026-09-07.md` | _commit containing this evidence_ | pending |
 | Three instances on port 8090 | final Compose/NGINX/README and validation output | _video commit_ | pending |
 | Secrets and security review | `Dockerfile`, `.gitignore`, `security_review.md` | _commit after review_ | pending |
 
