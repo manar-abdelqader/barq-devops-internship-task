@@ -2,13 +2,14 @@
 #!/usr/bin/env python3
 """Prove NGINX availability while one Flask backend is stopped and then recovered."""
 import json
+import os
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.request
 
-BASE_URL = "http://127.0.0.1:8080"
+BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8080").rstrip("/")
 STOPPED_SERVICE = "app-02"
 SURVIVING_INSTANCE = "app-01"
 RECOVERED_INSTANCE = "app-02"

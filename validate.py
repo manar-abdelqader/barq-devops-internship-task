@@ -7,10 +7,12 @@ Exits 0 on success (PASS), non-zero on any failure (FAIL).
 import sys
 import time
 import json
+import os
 import urllib.request
 import socket
 
-BASE_URL = "http://127.0.0.1:8080"
+BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8080").rstrip("/")
+EXPECTED_INSTANCES = int(os.getenv("EXPECTED_INSTANCES", "2"))
 ENDPOINTS = ["/", "/health", "/ready", "/instance", "/records", "/counter"]
 PROHIBITED_PORTS = [5432, 6379]
 MAX_RETRIES = 15
@@ -55,7 +57,8 @@ for _ in range(10):
                 instances.add(instance_id)
         except Exception:
             pass
-check("Both app-01 and app-02 respond via /instance", len(instances) >= 2, f"(seen {len(instances)} distinct responses)")
+check(f"At least {EXPECTED_INSTANCES} backend instances respond via /instance",
+      len(instances) >= EXPECTED_INSTANCES, f"(seen {len(instances)} distinct responses)")
 
 print("\n=== Checking prohibited ports are NOT publicly reachable ===")
 for port in PROHIBITED_PORTS:

@@ -55,3 +55,8 @@ GitHub Actions runs Compose syntax validation, image build, startup/readiness ch
 ## Video-final configuration
 
 During the continuous video only, change `PUBLIC_PORT` from `8080` to `8090`, add `app-03` on both application networks and update the NGINX upstream, then rerun validation adapted for three identities. Record each command, output and commit. Do not run `video_challenge.sh` before the recorded first run.
+
+```bash
+BASE_URL=http://127.0.0.1:8090 EXPECTED_INSTANCES=3 python3 validate.py
+BASE_URL=http://127.0.0.1:8090 python3 failure_test.py
+```
